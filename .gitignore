@@ -3,3 +3,6 @@
 
 # build directory
 /build
+
+# env files
+/environment/.env.discord
