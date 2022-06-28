@@ -1,4 +1,4 @@
-import { Client, Intents } from "discord.js";
+import { Client, GuildMember, Intents } from "discord.js";
 
 export class MelonaBot {
     private client: Client;
@@ -16,14 +16,28 @@ export class MelonaBot {
     private botIntents(): Intents {
         const intents: Intents = new Intents();
         intents.add(
-            Intents.FLAGS.GUILD_MESSAGES
+            Intents.FLAGS.GUILDS,
+            Intents.FLAGS.GUILD_MEMBERS,
+            Intents.FLAGS.GUILD_MESSAGES,
+            Intents.FLAGS.GUILD_PRESENCES
         );
         return intents;
     }
 
-    private setupBotEvents(): void {
+    private ready(): void {
         this.client.on("ready", (client: Client): void => {
             console.log(`${client.user?.tag} ready at ${client.readyTimestamp}`);
         });
+    }
+
+    private guildMemberAdd(): void {
+        this.client.on("guildMemberAdd", (member: GuildMember): void => {
+            console.log(`${member.user.tag} has joined Melona!`);
+        });
+    }
+
+    private setupBotEvents(): void {
+        this.ready();
+        this.guildMemberAdd();
     }
 }

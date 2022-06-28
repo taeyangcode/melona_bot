@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node ./build/source/main.js",
     "build": "tsc",
-    "dev": "npm run build && node ./build/source/main.js"
+    "dev": "tsc && node ./build/source/main.js"
   },
   "repository": {
     "type": "git",
