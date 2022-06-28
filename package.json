@@ -1,0 +1,29 @@
+{
+  "name": "melona_bot",
+  "version": "0.0.1",
+  "description": "TBD",
+  "main": "./source/main.ts",
+  "type": "module",
+  "scripts": {
+    "start": "node ./build/source/main.js",
+    "build": "tsc",
+    "dev": "npm run build && npm start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/taeyangcode/melona_bot.git"
+  },
+  "author": "장태양",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/taeyangcode/melona_bot/issues"
+  },
+  "homepage": "https://github.com/taeyangcode/melona_bot#readme",
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "typescript": "^4.7.4"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.1"
+  }
+}
