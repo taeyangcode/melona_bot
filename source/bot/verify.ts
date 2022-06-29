@@ -1,24 +1,24 @@
-import { CacheType, DMChannel, GuildMember, InteractionCollector, Message, MessageActionRow, MessageActionRowComponent, MessageButton, MessageComponentCollectorOptions, MessageComponentInteraction, MessageEmbed } from "discord.js";
+import { CacheType, DMChannel, GuildMember, InteractionCollector, Message, MessageActionRow, MessageActionRowComponent, MessageButton, MessageComponentCollectorOptions, MessageComponentInteraction, MessageEmbed, Snowflake } from "discord.js";
 
 async function createDMChannel(member: GuildMember): Promise<DMChannel> {
     return await member.createDM();
 }
 
-const _newMemberID: Readonly<string> = "NEW_MEMBER";
-const _returningMemberID: Readonly<string> = "RETURNING_MEMBER";
+const NEW_MEMBER_ID: Readonly<string> = "NEW_MEMBER";
+const RETURNING_MEMBER_ID: Readonly<string> = "RETURNING_MEMBER";
 
 function memberTypeButtons(): MessageButton[] {
     const newMember: MessageButton = new MessageButton();
     newMember.setEmoji("👤");
     newMember.setLabel("New Member");
     newMember.setStyle("PRIMARY");
-    newMember.setCustomId(_newMemberID)
+    newMember.setCustomId(NEW_MEMBER_ID)
 
     const returningMember: MessageButton = new MessageButton();
     returningMember.setEmoji("👋");
     returningMember.setLabel("Returning Member");
     returningMember.setStyle("PRIMARY");
-    returningMember.setCustomId(_returningMemberID);
+    returningMember.setCustomId(RETURNING_MEMBER_ID);
 
     return [newMember, returningMember];
 }
@@ -42,39 +42,65 @@ function getWelcomeMessageComponents(): MessageComponents {
     };
 }
 
-interface MessageButtonDisabledData {
-    customID: string;
-    setDisabled: boolean;
-};
-
-interface MessageButtonState {
-    message: Message;
-    buttonData: MessageButtonDisabledData[]; 
-};
-
-function setMessageButtonState(buttonState: MessageButtonState): void {
-    const actionRows: MessageActionRow<MessageActionRowComponent>[] = buttonState.message.components;
+function disableMessageButtons(message: Message): void {
+    const actionRows: MessageActionRow<MessageActionRowComponent>[] = message.components;
     actionRows.forEach((actionRow: MessageActionRow<MessageActionRowComponent>): void => {
         actionRow.components.forEach((component: MessageActionRowComponent): void => {
             if (component.type === "BUTTON") {
-                buttonState.buttonData.forEach((button: MessageButtonDisabledData): void => {
-                    if (button.customID === component.customId) {
-                        component.setDisabled(button.setDisabled);
-                    }
-                });
+                console.log("DISABLED BUTTON");
+                component.setDisabled(true);
             }
         });
     });
 }
 
-async function welcomeMessageButtonHandler(welcomeMessage: Message): Promise<void> {
-    const collector = welcomeMessage.createMessageComponentCollector();
-    collector.on("collect", (interaction: MessageComponentInteraction<CacheType>): void => {
-        if (interaction.customId === _newMemberID) {
+const RETURNING_MEMBER_DONE_ID: Readonly<string> = "RM_DONE";
 
+function getReturningMemberMessageComponents(): MessageComponents {
+    const message: MessageEmbed = new MessageEmbed();
+    message.setTitle("Welcome Back!");
+    message.setDescription(
+        `Please reply with any additional information that would help staff identify that you are returning member (E.g. previous aliases, Discord tags, etc.), then click the \`Done\` button.`
+    );
+
+    const buttonRow: MessageActionRow = new MessageActionRow();
+    const doneButton: MessageButton = new MessageButton();
+    doneButton.setEmoji("✅");
+    doneButton.setLabel("Done");
+    doneButton.setStyle("SUCCESS");
+    doneButton.setCustomId(RETURNING_MEMBER_DONE_ID);
+    buttonRow.addComponents(doneButton);
+
+    return {
+        embed: message,
+        row: buttonRow
+    };
+}
+
+function returningMemberMessageButtonHandler(returningMemberMessage: Message): void {
+    const collector = returningMemberMessage.createMessageComponentCollector({ max: 1, time: 120000 });
+    let response: string;
+    collector.on("collect", async (interaction: MessageComponentInteraction<CacheType>): Promise<void> => {
+        disableMessageButtons(returningMemberMessage);
+    });
+}
+
+function welcomeMessageButtonHandler(welcomeMessage: Message, dmChannel: DMChannel): void {
+    const collector = welcomeMessage.createMessageComponentCollector({ max: 1, time: 60000 });
+    collector.on("collect", async (interaction: MessageComponentInteraction<CacheType>): Promise<void> => {
+        disableMessageButtons(welcomeMessage);
+        if (interaction.customId === NEW_MEMBER_ID) {
+            
         }
-        else if (interaction.customId === _returningMemberID) {
+        else if (interaction.customId === RETURNING_MEMBER_ID) {
+            const returningMemberMessageComponents: MessageComponents = getReturningMemberMessageComponents();
+            const returningMemberMessage: Message = await dmChannel.send({
+                embeds: [returningMemberMessageComponents.embed],
+                components: [returningMemberMessageComponents.row!]
+            });
+            await interaction.deferUpdate();
 
+            returningMemberMessageButtonHandler(returningMemberMessage);
         }
     });
 }
@@ -88,4 +114,5 @@ export async function verify(member: GuildMember): Promise<void> {
         embeds: [welcomeMessageComponents.embed], 
         components: [welcomeMessageComponents.row!]
     });
+    welcomeMessageButtonHandler(welcomeMessage, dmChannel);
 }
