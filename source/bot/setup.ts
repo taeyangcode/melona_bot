@@ -1,4 +1,5 @@
 import { Client, GuildMember, Intents } from "discord.js";
+import { verify } from "./verify.js";
 
 export class MelonaBot {
     private client: Client;
@@ -33,6 +34,7 @@ export class MelonaBot {
     private guildMemberAdd(): void {
         this.client.on("guildMemberAdd", (member: GuildMember): void => {
             console.log(`${member.user.tag} has joined Melona!`);
+            verify(member);
         });
     }
 
