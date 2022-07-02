@@ -1,4 +1,5 @@
-import { CacheType, DMChannel, GuildMember, InteractionCollector, Message, MessageActionRow, MessageActionRowComponent, MessageButton, MessageComponentCollectorOptions, MessageComponentInteraction, MessageEmbed, Snowflake } from "discord.js";
+import { Channel } from "diagnostics_channel";
+import { CacheType, Collection, DMChannel, GuildMember, InteractionCollector, Message, MessageActionRow, MessageActionRowComponent, MessageButton, MessageComponentCollectorOptions, MessageComponentInteraction, MessageEmbed, Snowflake, TextBasedChannel } from "discord.js";
 
 async function createDMChannel(member: GuildMember): Promise<DMChannel> {
     return await member.createDM();
@@ -41,18 +42,18 @@ function getWelcomeMessageComponents(): MessageComponents {
         row: buttonRow
     };
 }
-
-function disableMessageButtons(message: Message): void {
-    const actionRows: MessageActionRow<MessageActionRowComponent>[] = message.components;
-    actionRows.forEach((actionRow: MessageActionRow<MessageActionRowComponent>): void => {
-        actionRow.components.forEach((component: MessageActionRowComponent): void => {
-            if (component.type === "BUTTON") {
-                console.log("DISABLED BUTTON");
-                component.setDisabled(true);
-            }
-        });
-    });
-}
+ 
+// function disableMessageButtons(message: Message): void {
+//     const actionRows: MessageActionRow<MessageActionRowComponent>[] = message.components;
+//     actionRows.forEach((actionRow: MessageActionRow<MessageActionRowComponent>): void => {
+//         actionRow.components.forEach((component: MessageActionRowComponent): void => {
+//             if (component.type === "BUTTON") {
+//                 console.log("DISABLED BUTTON");
+//                 component.setDisabled(true);
+//             }
+//         });
+//     });
+// }
 
 const RETURNING_MEMBER_DONE_ID: Readonly<string> = "RM_DONE";
 
@@ -77,18 +78,23 @@ function getReturningMemberMessageComponents(): MessageComponents {
     };
 }
 
-function returningMemberMessageButtonHandler(returningMemberMessage: Message): void {
+async function getMessagesAfterTimestamp(messageID: string, channel: DMChannel, limit: number): Promise<Message[]> {
+    return Array.from((await channel.messages.fetch({ limit, after: messageID })).values());
+}
+
+function returningMemberMessageButtonHandler(returningMemberMessage: Message, dmChannel: DMChannel): void {
     const collector = returningMemberMessage.createMessageComponentCollector({ max: 1, time: 120000 });
-    let response: string;
     collector.on("collect", async (interaction: MessageComponentInteraction<CacheType>): Promise<void> => {
-        disableMessageButtons(returningMemberMessage);
+        const replies: Message[] = await getMessagesAfterTimestamp(returningMemberMessage.id, dmChannel, 5);
+        for (const reply of replies) {
+            console.log(reply.content);
+        }
     });
 }
 
 function welcomeMessageButtonHandler(welcomeMessage: Message, dmChannel: DMChannel): void {
     const collector = welcomeMessage.createMessageComponentCollector({ max: 1, time: 60000 });
     collector.on("collect", async (interaction: MessageComponentInteraction<CacheType>): Promise<void> => {
-        disableMessageButtons(welcomeMessage);
         if (interaction.customId === NEW_MEMBER_ID) {
             
         }
@@ -100,8 +106,9 @@ function welcomeMessageButtonHandler(welcomeMessage: Message, dmChannel: DMChann
             });
             await interaction.deferUpdate();
 
-            returningMemberMessageButtonHandler(returningMemberMessage);
+            returningMemberMessageButtonHandler(returningMemberMessage, dmChannel);
         }
+        collector.stop();
     });
 }
 
