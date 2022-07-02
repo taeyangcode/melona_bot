@@ -1,4 +1,3 @@
-import { Channel } from "diagnostics_channel";
 import { CacheType, Collection, DMChannel, GuildMember, InteractionCollector, Message, MessageActionRow, MessageActionRowComponent, MessageButton, MessageComponentCollectorOptions, MessageComponentInteraction, MessageEmbed, Snowflake, TextBasedChannel } from "discord.js";
 
 async function createDMChannel(member: GuildMember): Promise<DMChannel> {
@@ -63,6 +62,7 @@ function getReturningMemberMessageComponents(): MessageComponents {
     message.setDescription(
         `Please reply with any additional information that would help staff identify that you are returning member (E.g. previous aliases, Discord tags, etc.), then click the \`Done\` button.`
     );
+    message.setFooter({ text: "Note: Only the most recent five replies will be recorded upon pressing done." });
 
     const buttonRow: MessageActionRow = new MessageActionRow();
     const doneButton: MessageButton = new MessageButton();
@@ -85,10 +85,9 @@ async function getMessagesAfterTimestamp(messageID: string, channel: DMChannel, 
 function returningMemberMessageButtonHandler(returningMemberMessage: Message, dmChannel: DMChannel): void {
     const collector = returningMemberMessage.createMessageComponentCollector({ max: 1, time: 120000 });
     collector.on("collect", async (interaction: MessageComponentInteraction<CacheType>): Promise<void> => {
+        await interaction.deferUpdate();
+        
         const replies: Message[] = await getMessagesAfterTimestamp(returningMemberMessage.id, dmChannel, 5);
-        for (const reply of replies) {
-            console.log(reply.content);
-        }
     });
 }
 
@@ -99,13 +98,13 @@ function welcomeMessageButtonHandler(welcomeMessage: Message, dmChannel: DMChann
             
         }
         else if (interaction.customId === RETURNING_MEMBER_ID) {
+            await interaction.deferUpdate();
+
             const returningMemberMessageComponents: MessageComponents = getReturningMemberMessageComponents();
             const returningMemberMessage: Message = await dmChannel.send({
                 embeds: [returningMemberMessageComponents.embed],
                 components: [returningMemberMessageComponents.row!]
             });
-            await interaction.deferUpdate();
-
             returningMemberMessageButtonHandler(returningMemberMessage, dmChannel);
         }
         collector.stop();
