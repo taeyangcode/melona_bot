@@ -1,4 +1,5 @@
-import { CacheType, Collection, DMChannel, GuildMember, InteractionCollector, Message, MessageActionRow, MessageActionRowComponent, MessageButton, MessageComponentCollectorOptions, MessageComponentInteraction, MessageEmbed, Snowflake, TextBasedChannel } from "discord.js";
+import { CacheType, Client, Collection, DMChannel, GuildMember, Message, MessageActionRow, MessageButton, MessageComponentInteraction, MessageEmbed, MessageOptions, MessagePayload, PartialTextBasedChannelFields, TextBasedChannel, User, WebhookMessageOptions } from "discord.js";
+import { getDiscordAdminChannelID } from "../env/env-helper.js";
 
 async function createDMChannel(member: GuildMember): Promise<DMChannel> {
     return await member.createDM();
@@ -41,18 +42,6 @@ function getWelcomeMessageComponents(): MessageComponents {
         row: buttonRow
     };
 }
- 
-// function disableMessageButtons(message: Message): void {
-//     const actionRows: MessageActionRow<MessageActionRowComponent>[] = message.components;
-//     actionRows.forEach((actionRow: MessageActionRow<MessageActionRowComponent>): void => {
-//         actionRow.components.forEach((component: MessageActionRowComponent): void => {
-//             if (component.type === "BUTTON") {
-//                 console.log("DISABLED BUTTON");
-//                 component.setDisabled(true);
-//             }
-//         });
-//     });
-// }
 
 const RETURNING_MEMBER_DONE_ID: Readonly<string> = "RM_DONE";
 
@@ -79,15 +68,46 @@ function getReturningMemberMessageComponents(): MessageComponents {
 }
 
 async function getMessagesAfterTimestamp(messageID: string, channel: DMChannel, limit: number): Promise<Message[]> {
-    return Array.from((await channel.messages.fetch({ limit, after: messageID })).values());
+    const messageCollection: Collection<string, Message> = await channel.messages.fetch({ limit, after: messageID });
+    return Array.from(messageCollection.values());
 }
+
+async function sendToAdminChannel(botClient: Client, options: MessageOptions): Promise<void> {
+    const adminChannel: TextBasedChannel | null = await botClient.channels.fetch(getDiscordAdminChannelID()) as TextBasedChannel | null;
+    if (adminChannel === null) {
+        throw Error("Admin Channel doesn't exist.");
+    }
+    await adminChannel.send(options);
+}
+
+function getReturningMemberAdminEmbed(user: User, messages: Message[]): MessageEmbed {
+    const embed: MessageEmbed = new MessageEmbed();
+    embed.setTitle("New Returning Member Verification");
+    embed.setDescription(`User: ${user}`);
+    if (messages.length === 0) {
+        embed.addField("User did not supply any further details.", "\u200b");
+    }
+    else {
+        messages.reverse();
+        messages.forEach((message: Message, index: number): void => {
+            embed.addField(`Message ${index + 1}`, message.content);
+        });
+    }
+    return embed;
+} 
 
 function returningMemberMessageButtonHandler(returningMemberMessage: Message, dmChannel: DMChannel): void {
     const collector = returningMemberMessage.createMessageComponentCollector({ max: 1, time: 120000 });
     collector.on("collect", async (interaction: MessageComponentInteraction<CacheType>): Promise<void> => {
-        await interaction.deferUpdate();
+        if (interaction.customId === RETURNING_MEMBER_DONE_ID) {
+            await interaction.deferUpdate();
         
-        const replies: Message[] = await getMessagesAfterTimestamp(returningMemberMessage.id, dmChannel, 5);
+            const replies: Message[] = await getMessagesAfterTimestamp(returningMemberMessage.id, dmChannel, 5);
+            const returningMemberAdminEmbed: MessageEmbed = getReturningMemberAdminEmbed(interaction.user, replies);
+            await sendToAdminChannel(returningMemberMessage.client, {
+                embeds: [returningMemberAdminEmbed]
+            });
+        }
     });
 }
 
