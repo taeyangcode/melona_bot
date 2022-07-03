@@ -72,28 +72,51 @@ async function getMessagesAfterTimestamp(messageID: string, channel: DMChannel, 
     return Array.from(messageCollection.values());
 }
 
-async function sendToAdminChannel(botClient: Client, options: MessageOptions): Promise<void> {
+async function sendToAdminChannel(botClient: Client, options: MessageOptions): Promise<Message> {
     const adminChannel: TextBasedChannel | null = await botClient.channels.fetch(getDiscordAdminChannelID()) as TextBasedChannel | null;
     if (adminChannel === null) {
         throw Error("Admin Channel doesn't exist.");
     }
-    await adminChannel.send(options);
+    return await adminChannel.send(options);
 }
 
-function getReturningMemberAdminEmbed(user: User, messages: Message[]): MessageEmbed {
+const ACCEPT_MEMBER_BUTTON_ID: Readonly<string> = "ACCEPT_MEMBER_BUTTON";
+const REJECT_MEMBER_BUTTON_ID: Readonly<string> = "REJECT_MEMBER_BUTTON";
+
+function getReturningMemberVerificationComponents(user: User, messages: Message[]): MessageComponents {
     const embed: MessageEmbed = new MessageEmbed();
-    embed.setTitle("New Returning Member Verification");
-    embed.setDescription(`User: ${user}`);
+    embed.setTitle(`Returning Member Verification`);
+
+    let description: string = `Username: ${user}\n`;
     if (messages.length === 0) {
-        embed.addField("User did not supply any further details.", "\u200b");
+        description += `\n*User did not supply any further details*`
     }
     else {
         messages.reverse();
-        messages.forEach((message: Message, index: number): void => {
-            embed.addField(`Message ${index + 1}`, message.content);
+        messages.forEach((message: Message, index: number): void => { 
+            description += `\n**Message ${index + 1}:** ${message.content}`;
         });
     }
-    return embed;
+    embed.setDescription(description);
+
+    const buttonRow: MessageActionRow = new MessageActionRow();
+
+    const acceptButton: MessageButton = new MessageButton();
+    acceptButton.setLabel("Accept");
+    acceptButton.setStyle("SUCCESS");
+    acceptButton.setCustomId(ACCEPT_MEMBER_BUTTON_ID);
+    
+    const rejectButton: MessageButton = new MessageButton();
+    rejectButton.setLabel("Reject");
+    rejectButton.setStyle("DANGER");
+    rejectButton.setCustomId(REJECT_MEMBER_BUTTON_ID);
+
+    buttonRow.addComponents(acceptButton, rejectButton);
+
+    return {
+        embed,
+        row: buttonRow
+    };
 } 
 
 function returningMemberMessageButtonHandler(returningMemberMessage: Message, dmChannel: DMChannel): void {
@@ -103,9 +126,10 @@ function returningMemberMessageButtonHandler(returningMemberMessage: Message, dm
             await interaction.deferUpdate();
         
             const replies: Message[] = await getMessagesAfterTimestamp(returningMemberMessage.id, dmChannel, 5);
-            const returningMemberAdminEmbed: MessageEmbed = getReturningMemberAdminEmbed(interaction.user, replies);
-            await sendToAdminChannel(returningMemberMessage.client, {
-                embeds: [returningMemberAdminEmbed]
+            const returningMemberVerificationComponents: MessageComponents = getReturningMemberVerificationComponents(interaction.user, replies);
+            const verificationMessage: Message = await sendToAdminChannel(returningMemberMessage.client, {
+                embeds: [returningMemberVerificationComponents.embed],
+                components: [returningMemberVerificationComponents.row!]
             });
         }
     });
