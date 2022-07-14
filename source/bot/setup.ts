@@ -1,5 +1,5 @@
 import { Client, GuildMember, Intents } from "discord.js";
-import { verify } from "./verify.js";
+import { verify } from "./verify/verify.js";
 
 export class MelonaBot {
     private client: Client;
