@@ -1,5 +1,5 @@
-import { Client, Collection, DMChannel, GuildMember, Message, MessageActionRow, MessageEmbed, MessageOptions, TextBasedChannel } from "discord.js";
-import { getDiscordAdminChannelID } from "../../env/env-helper.js";
+import { BanOptions, Client, Collection, DMChannel, Guild, GuildMember, Message, MessageActionRow, MessageEmbed, MessageOptions, Snowflake, TextBasedChannel, User } from "discord.js";
+import { getDiscordAdminChannelID, getDiscordServerID } from "../../env/env-helper.js";
 
 export const BUTTON_NEW_MEMBER_ID: Readonly<string> = "B_NEW_MEMBER";
 export const BUTTON_RETURNING_MEMBER_ID: Readonly<string> = "B_RETURNING_MEMBER";
@@ -29,4 +29,20 @@ export async function sendToAdminChannel(botClient: Client, options: MessageOpti
         throw Error("Admin Channel doesn't exist.");
     }
     return await adminChannel.send(options);
+}
+
+export function getMelonaServer(botClient: Client): Guild {
+    const server: Guild | undefined = botClient.guilds.cache.get(getDiscordServerID());
+    if (typeof server === "undefined") {
+        throw Error("Melona Server could not be found.");
+    }
+    return server;
+}
+
+export async function kickMember(server: Guild, member: User, reason?: string): Promise<Snowflake | User | GuildMember> {
+    return await server.members.kick(member, reason || "No reason supplied.");
+}
+
+export async function banMember(server: Guild, member: User, options: BanOptions): Promise<Snowflake | User | GuildMember> {
+    return await server.members.ban(member, options);
 }

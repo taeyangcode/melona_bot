@@ -47,6 +47,7 @@ export class ReturningMemberVerification {
             embeds: [components.embed],
             components: [components.row!]
         });
+        VerificationMessage.handler(verificationMessage, dmChannel);
     }
 
     public static handler(message: Message, dmChannel: DMChannel): void {
@@ -54,6 +55,7 @@ export class ReturningMemberVerification {
         collector.on("collect", async (interaction: MessageComponentInteraction<CacheType>): Promise<void> => {
             if (interaction.customId === BUTTON_RETURNING_MEMBER_SELECTION_ID) {
                 this.sendVerificationToAdminChannel(interaction, message, dmChannel);
+                collector.stop();
             }
         });
     }

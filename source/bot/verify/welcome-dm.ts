@@ -64,16 +64,14 @@ export class WelcomeDM {
         const collector: InteractionCollector<MessageComponentInteraction> = message.createMessageComponentCollector({ max: 1, time: 60000 });
 
         collector.on("collect", async (interaction: MessageComponentInteraction<CacheType>): Promise<void> => {
-            switch (interaction.customId) {
-                case BUTTON_NEW_MEMBER_ID:
-                    await this.newMemberSelection(interaction);
-                    break;
-                
-                case BUTTON_RETURNING_MEMBER_ID:
-                    await this.returningMemberSelection(interaction, dmChannel);
-                    break;
+            if (interaction.customId === BUTTON_NEW_MEMBER_ID) {
+                await this.newMemberSelection(interaction);
+                collector.stop();
             }
-            collector.stop();
+            else if (interaction.customId === BUTTON_RETURNING_MEMBER_ID) {
+                await this.returningMemberSelection(interaction, dmChannel);
+                collector.stop();
+            }
         });
     }
 }

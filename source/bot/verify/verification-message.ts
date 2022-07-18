@@ -1,5 +1,5 @@
-import { User, Message, MessageEmbed, MessageButton, MessageActionRow, MessageActionRowComponent } from "discord.js";
-import { BUTTON_ACCEPT_MEMBER_ID, BUTTON_REJECT_MEMBER_ID, MessageComponents } from "./verify_h.js";
+import { User, Message, MessageEmbed, MessageButton, MessageActionRow, MessageActionRowComponent, DMChannel, InteractionCollector, MessageComponentInteraction, CacheType, Guild } from "discord.js";
+import { banMember, BUTTON_ACCEPT_MEMBER_ID, BUTTON_REJECT_MEMBER_ID, getMelonaServer, kickMember, MessageComponents } from "./verify_h.js";
 
 export class VerificationMessage {
     private static returningMemberEmbed(user: User, messages: Message[]): MessageEmbed {
@@ -55,5 +55,25 @@ export class VerificationMessage {
             embed: this.returningMemberEmbed(user, messages),
             row: this.buttonRow()
         };
+    }
+
+    public static handler(message: Message, dmChannel: DMChannel): void {
+        const collector: InteractionCollector<MessageComponentInteraction> = message.createMessageComponentCollector();
+
+        collector.on("collect", async (interaction: MessageComponentInteraction<CacheType>): Promise<void> => {
+            const server: Guild = getMelonaServer(dmChannel.client);
+            const newMember: User = dmChannel.recipient;
+
+            if (interaction.customId === BUTTON_ACCEPT_MEMBER_ID) {
+                collector.stop();
+            }
+            else if (interaction.customId === BUTTON_REJECT_MEMBER_ID) {
+                await kickMember(server, newMember);
+                console.log(`User ${newMember} has been kicked from Melona.`);
+                collector.stop();
+            }
+
+            await interaction.deferUpdate();
+        });
     }
 }

@@ -20,6 +20,14 @@ export function getDiscordBotToken(): string {
     return token;
 }
 
+export function getDiscordServerID(): string {
+    const token: string | undefined = getEnvValue("DISCORD_SERVER_ID");
+    if (typeof token === "undefined") {
+        throw Error("Discord Bot token undefined.");
+    }
+    return token;
+}
+
 export function getDiscordAdminChannelID(): string {
     const token: string | undefined = getEnvValue("DISCORD_ADMIN_CHANNEL_ID");
     if (typeof token === "undefined") {
