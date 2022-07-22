@@ -26,7 +26,7 @@ export async function getMessagesAfterTimestamp(messageID: string, channel: DMCh
 export async function sendToAdminChannel(botClient: Client, options: MessageOptions): Promise<Message> {
     const adminChannel: TextBasedChannel | null = await botClient.channels.fetch(getDiscordAdminChannelID()) as TextBasedChannel | null;
     if (adminChannel === null) {
-        throw Error("Admin Channel doesn't exist.");
+        throw Error("Admin Channel couldn't be located.");
     }
     return await adminChannel.send(options);
 }
