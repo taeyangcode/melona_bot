@@ -1,19 +1,6 @@
 import { BanOptions, Client, Collection, DMChannel, Guild, GuildMember, Message, MessageActionRow, MessageEmbed, MessageOptions, Snowflake, TextBasedChannel, User } from "discord.js";
 import { getDiscordAdminChannelID, getDiscordServerID } from "../../env/env-helper.js";
 
-export const BUTTON_NEW_MEMBER_ID: Readonly<string> = "B_NEW_MEMBER";
-export const BUTTON_RETURNING_MEMBER_ID: Readonly<string> = "B_RETURNING_MEMBER";
-export const BUTTON_NEW_MEMBER_SELECTION_ID: Readonly<string> = "B_NEW_MEMBER_SELECTION";
-export const BUTTON_RETURNING_MEMBER_SELECTION_ID: Readonly<string> = "B_RETURNING_MEMBER_SELECTION";
-
-export const BUTTON_ACCEPT_MEMBER_ID: Readonly<string> = "B_ACCEPT_MEMBER";
-export const BUTTON_REJECT_MEMBER_ID: Readonly<string> = "B_REJECT_MEMBER";
-
-export interface MessageComponents {
-    embed: MessageEmbed;
-    row?: MessageActionRow;
-};
-
 export async function createDMChannel(member: GuildMember): Promise<DMChannel> {
     return await member.createDM();
 }
